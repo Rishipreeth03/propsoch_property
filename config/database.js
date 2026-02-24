@@ -5,10 +5,13 @@ let connected = false;
 const connectDB = async () => {
   mongoose.set('strictQuery', true);
 
-  // If no Mongo URI is provided, skip connecting (frontend-only deployments)
-  if (!process.env.MONGODB_URI) {
+  // If no Mongo URI is provided or value is clearly a placeholder/invalid,
+  // skip connecting (frontend-only deployments).
+  const uri = process.env.MONGODB_URI && process.env.MONGODB_URI.trim();
+  const validScheme = uri && /^mongodb(\+srv)?:\/\//i.test(uri);
+  if (!uri || !validScheme) {
     if (process.env.NODE_ENV !== 'test') {
-      console.warn('MONGODB_URI not set — skipping MongoDB connection (frontend-only mode)');
+      console.warn('MONGODB_URI not set or invalid — skipping MongoDB connection (frontend-only mode)');
     }
     return;
   }
@@ -21,7 +24,7 @@ const connectDB = async () => {
 
   // Connect to MongoDB
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(uri);
     connected = true;
     console.log('MongoDB connected...');
   } catch (error) {
